@@ -1,0 +1,176 @@
+/*
+*Created by Richard Green
+*V1.0 - 15th October 2017
+*/
+ 
+#include <SPI.h>
+#include <MFRC522.h>
+ 
+#define SS_PIN 10
+#define RST_PIN 9
+MFRC522 mfrc522(SS_PIN, RST_PIN);   // Create MFRC522 instance.
+int LED1 = 2;
+int LED2 = 3;
+int LED3 = 4;
+int LED4 = 5;
+int TONEPIN = 6;
+int LED;
+int FREQUENCY;
+int WaitTime = 0;
+int PrevLED = 0;
+int Delay = 0;
+int HighFreq = 2000;
+int LowFreq = 200;
+
+void setup() 
+{
+  pinMode(LED1, OUTPUT); // initialize digital pin LED1 as an output.
+  pinMode(LED2, OUTPUT); // initialize digital pin LED2 as an output.
+  pinMode(LED3, OUTPUT); // initialize digital pin LED3 as an output.
+  pinMode(LED4, OUTPUT);
+  pinMode(TONEPIN, OUTPUT); // initialise digital pin TONE as an output.
+  Serial.begin(9600);   // Initiate a serial communication
+  SPI.begin();      // Initiate  SPI bus
+  mfrc522.PCD_Init();   // Initiate MFRC522
+  Serial.println("Let's See If You've Won A Prize?.....");
+  Serial.println();
+
+}
+void loop() 
+{
+  // Look for new cards
+  if ( ! mfrc522.PICC_IsNewCardPresent()) 
+  {
+    return;
+  }
+  // Select one of the cards
+  if ( ! mfrc522.PICC_ReadCardSerial()) 
+  {
+    return;
+  }
+  //Show UID on serial monitor
+  Serial.print("UID tag :");
+  String content= "";
+  byte letter;
+  for (byte i = 0; i < mfrc522.uid.size; i++) 
+  {
+     Serial.print(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " ");
+     Serial.print(mfrc522.uid.uidByte[i], HEX);
+     content.concat(String(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " "));
+     content.concat(String(mfrc522.uid.uidByte[i], HEX));
+  }
+  Serial.println();
+  content.toUpperCase();
+  if ((content.substring(1) == "FB A6 C7 49") || (content.substring(1) == "25 42 3D 11")) //change here the UID of the card/cards that you want to give access
+  {
+    win();
+    delay(1500);    
+  }
+  else  
+  {
+    lose();
+    delay(500);
+  }
+  digitalWrite(LED1, LOW);
+  digitalWrite(LED2, LOW);
+  digitalWrite(LED3, LOW);
+  digitalWrite(LED4, LOW);
+  noTone(TONEPIN);
+  PrevLED = 0;
+} 
+
+void win() //flash lights and sound siren
+{
+  Serial.println("Congratulations, You've Won A Prize!");
+  Serial.println();  
+  randomSeed(analogRead(0));
+  Delay = random(100, 300);
+  //Delay = 50;
+  randomSeed(analogRead(0));
+  //WaitTime = (random(4, 10) * Delay) / 200;
+  WaitTime = random(4, 10);
+  Serial.print("Wait Time = ");
+  Serial.println(WaitTime);
+  Serial.print("Delay = ");
+  Serial.println(Delay);
+  Serial.println();
+  for (int i=0; i <= WaitTime; i++)
+    {
+    digitalWrite(LED1, LOW);    
+    digitalWrite(LED2, LOW);
+    digitalWrite(LED3, LOW);
+    digitalWrite(LED4, LOW);
+    randomSeed(analogRead(0));
+    LED = random(2, 6);
+    if (LED == PrevLED)
+    {
+      LED = random(2, 6);
+      digitalWrite(LED, HIGH);
+      randomSeed(analogRead(0));
+      FREQUENCY = random(LowFreq, HighFreq);
+      tone(TONEPIN, FREQUENCY);
+      PrevLED = LED;
+      delay(Delay); 
+    }
+    else
+    {
+      digitalWrite(LED, HIGH);
+      randomSeed(analogRead(0));
+      FREQUENCY = random(LowFreq, HighFreq);
+      tone(TONEPIN, FREQUENCY);
+      PrevLED = LED;
+      delay(Delay); 
+    }
+                    
+    digitalWrite(LED1, LOW);    
+    digitalWrite(LED2, LOW);
+    digitalWrite(LED3, LOW);
+    digitalWrite(LED4, LOW);
+    randomSeed(analogRead(0));
+    LED = random(2, 6);
+    if (LED == PrevLED)
+    {
+      LED = random(2, 6);
+      digitalWrite(LED, HIGH);
+      FREQUENCY = random(LowFreq, HighFreq);
+      tone(TONEPIN, FREQUENCY);
+      PrevLED = LED;
+      delay(Delay); 
+    }
+    else
+    {    
+    digitalWrite(LED, HIGH);
+    FREQUENCY = random(LowFreq, HighFreq);
+    tone(TONEPIN, FREQUENCY);
+    PrevLED = LED;
+    delay(Delay);
+    }
+}    
+    
+  for (int x=0; x <= 10; x++)
+    {
+    digitalWrite(LED, LOW);
+    delay(100);
+    digitalWrite(LED, HIGH);
+    delay(100);
+    noTone(TONEPIN);
+    Delay = 0;
+    WaitTime = 0;
+    }
+  Serial.print("Winning LED = ");  
+  Serial.println(LED - 1);
+}
+
+void lose() //all lights on and cotinuous tone
+{
+  Serial.println("Sorry, No Prize This Time.");
+  Serial.println();
+  digitalWrite(LED1, HIGH);
+  digitalWrite(LED2, HIGH);
+  digitalWrite(LED3, HIGH);
+  digitalWrite(LED4, HIGH);
+  tone(TONEPIN, 500);
+  delay(250);
+  tone(TONEPIN, 250);
+  delay(1000);
+}
